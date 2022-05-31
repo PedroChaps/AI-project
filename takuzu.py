@@ -35,52 +35,22 @@ class TakuzuState:
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
-    board = []
-    size = -1
-
-    # Método para criar uma instância de tabuleiro
-    def __init__(self, size, board):
-        self.board = board
-        self.size = size
-
-
-    # Método para mostrar a representação externa do tabuleiro
-    def __str__(self):
-        out = ""
-        i = 1
-        for nr in self.board:
-            out += str(nr)
-            if i % self.size == 0:
-                out += "\n"
-            else:
-                out += "\t"
-            i += 1
-        return out
-
-
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
-
-        # Verifica se a linha ou coluna está fora do limite
-        if row >= self.size or col >= self.size:
-            return None
-
-        # Fancy math
-        return self.board[self.size*row + col]
-
+        # TODO
+        pass
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
-
-        return self.get_number(row+1, col), self.get_number(row-1, col)
-
+        # TODO
+        pass
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-
-        return self.get_number(row, col-1), self.get_number(row, col+1)
+        # TODO
+        pass
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -93,26 +63,13 @@ class Board:
             > from sys import stdin
             > stdin.readline()
         """
-
-        board = []
-
-        # Lê as linhas
-        lines = sys.stdin.readlines()
-        size, values = int(lines[0]), lines[1:]
-
-        # Adiciona os valores ao tabuleiro
-        for line in values:
-            line = line.split("\t")
-            for nr in line:
-                board.append(int(nr))
-
-        return Board(size, board)
+        # TODO
+        pass
 
     # TODO: outros metodos da classe
 
 
 class Takuzu(Problem):
-
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
         # TODO
@@ -147,33 +104,10 @@ class Takuzu(Problem):
     # TODO: outros metodos da classe
 
 
-
-
-# FIXME só para testar se os exemplos mostrados estão a funcionar bem
-def tempExemplo1():
-    board = Board.parse_instance_from_stdin()
-    print("Initial:\n", board, sep="")
-
-    print(board.adjacent_vertical_numbers(3, 3))
-    print(board.adjacent_horizontal_numbers(3, 3))
-
-    print(board.adjacent_vertical_numbers(1, 1))
-    print(board.adjacent_horizontal_numbers(1, 1))
-
-
-
 if __name__ == "__main__":
-    # TODO: Ler o ficheiro de input de sys.argv[1],
-
-    tempExemplo1()
-
-
-
-
-
-    # TODO: Usar uma técnica de procura para resolver a instância,
-    # TODO: Retirar a solução a partir do nó resultante,
-    # TODO: Imprimir para o standard output no formato indicado.
-
-
+    # TODO:
+    # Ler o ficheiro do standard input,
+    # Usar uma técnica de procura para resolver a instância,
+    # Retirar a solução a partir do nó resultante,
+    # Imprimir para o standard output no formato indicado.
     pass
