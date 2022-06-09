@@ -18,12 +18,39 @@ from search import (
 )
 
 
+# TODO No enunciado diz "Podem ser feitas alterações a esta classe,
+#  estas devem ser devidamente justificadas". Devemos ter que justificar no relatório .-.
+#  Acho que basta dizer que foi por questões de eficiência a verificar o goal e a repetição de colunas
 class TakuzuState:
     state_id = 0
 
     def __init__(self, board):
         self.board = board
         self.id = TakuzuState.state_id
+
+        # Variáveis iniciais
+        self.size = board.size
+        nrFreeSlots = self.size ** 2
+        rowsQuantities = [0 for _ in range(self.size)]
+        colQuantities = [0 for _ in range(self.size)]
+
+        # Percorre o tabuleiro para contar o número de slots ocupados do
+        # tabuleiro inicial, bem como a quantidade de números por linha e por
+        # coluna
+        for i in range(self.size):
+            for j in range(self.size):
+                if board.get_number(i, j) != 2:
+                    nrFreeSlots -= 1
+                    rowsQuantities[i] += 1
+                    colQuantities[j] += 1
+
+        # TODO DEBUG apagar estes prints
+        print(nrFreeSlots, rowsQuantities, colQuantities)
+
+        self.nrFreeSlots = nrFreeSlots
+        self.rowsQuanties = rowsQuantities
+        self.colQuantities = colQuantities
+
         TakuzuState.state_id += 1
 
     def __lt__(self, other):
@@ -71,7 +98,10 @@ class Board:
         out += f"0| "
         for nr in self.board:
 
-            out += str(nr)
+            if nr != 2:
+                out += str(nr)
+            else:
+                out += " "
             if i % self.size == 0:
                 out += "\n"
                 out += f"{j}| "
@@ -180,14 +210,22 @@ class TakuzuTemp(Problem):
 
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
+
         super().__init__(board)
         self.size = board.size
+
 
 
     def actions(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
+
         # TODO
+        # TODO diz no enunciado que "Cada ação é representada sob a forma de
+        #  um tuplo com 3 inteiros (indíce da linha, indíce da coluna, número
+        #  a preencher na dada posição), por exemplo, (2, 1, 1) representa a
+        #  ação “preencher o número 1 na posição linha 2 coluna 1”"
+
         pass
 
 
@@ -196,7 +234,15 @@ class TakuzuTemp(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
+
         # TODO
+        # TODO quando se cria o estado que se vai jogar, não esquecer de:
+        #  - preencher o número de "slots" livres no tabuleiro do estado novo
+        #    (há de ser o nr do estado antigo - 1);
+        #  - preencher o número de peças na linha e coluna daquele
+        #    vetor (também há de ser igual ao do estado antigo mas
+        #    incrementa-se o número da linha e coluna correspondentes à jogada)
+
         pass
 
 
@@ -204,7 +250,12 @@ class TakuzuTemp(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
-        # TODO
+
+        # Como vamos verificando as regras sempre que fazemos cada jogada,
+        # tem-se a certeza que todas as peças colocadas num tabuleiro
+        # são válidas. Então, apenas se verifica se existe alguma
+        # peça livre no tabuleiro.
+        return state.nrFreeSlots == 0
         pass
 
 
@@ -296,7 +347,7 @@ def tempExemplo1():
     print(board.adjacent_horizontal_numbers(1, 1))
 
 def tempTeste1():
-    board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 2, 2, 1, 1, 2, 0])
+    board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 1, 2, 1, 1, 2, 0])
     print("Initial:\n", board, sep="")
 
     problem = TakuzuTemp(board)
