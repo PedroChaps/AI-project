@@ -27,30 +27,6 @@ class TakuzuState:
     def __init__(self, board):
         self.board = board
         self.id = TakuzuState.state_id
-
-        # Variáveis iniciais
-        self.size = board.size
-        nrFreeSlots = self.size ** 2
-        rowsQuantities = [0 for _ in range(self.size)]
-        colQuantities = [0 for _ in range(self.size)]
-
-        # Percorre o tabuleiro para contar o número de slots ocupados do
-        # tabuleiro inicial, bem como a quantidade de números por linha e por
-        # coluna
-        for i in range(self.size):
-            for j in range(self.size):
-                if board.get_number(i, j) != 2:
-                    nrFreeSlots -= 1
-                    rowsQuantities[i] += 1
-                    colQuantities[j] += 1
-
-        # TODO DEBUG apagar estes prints
-        print(nrFreeSlots, rowsQuantities, colQuantities)
-
-        self.nrFreeSlots = nrFreeSlots
-        self.rowsQuanties = rowsQuantities
-        self.colQuantities = colQuantities
-
         TakuzuState.state_id += 1
 
     def __lt__(self, other):
@@ -63,9 +39,37 @@ class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
     # Método para criar uma instância de tabuleiro
-    def __init__(self, size, board):
+    def __init__(self, size, board, nrFreeSlots=None, rowsQuantities=None, colQuantities=None):
         self.board = board
         self.size = size
+
+        # Variáveis iniciais
+        if nrFreeSlots == None or rowsQuantities == None or colQuantities == None:
+            nrFreeSlots = self.size ** 2
+            rowsQuantities = [0 for _ in range(self.size)]
+            colQuantities = [0 for _ in range(self.size)]
+
+            # Percorre o tabuleiro para contar o número de slots ocupados do
+            # tabuleiro inicial, bem como a quantidade de números por linha e por
+            # coluna
+            for i in range(self.size):
+                for j in range(self.size):
+                    if self.get_number(i, j) != 2:
+                        nrFreeSlots -= 1
+                        rowsQuantities[i] += 1
+                        colQuantities[j] += 1
+
+            # FIXME DEBUG apagar este print
+            # print(nrFreeSlots, rowsQuantities, colQuantities)
+
+            self.nrFreeSlots = nrFreeSlots
+            self.rowsQuantities = rowsQuantities
+            self.colQuantities = colQuantities
+
+        else:
+            self.nrFreeSlots = nrFreeSlots
+            self.rowsQuantities = rowsQuantities
+            self.colQuantities = colQuantities
 
 
     # Método para mostrar a representação externa do tabuleiro
@@ -168,42 +172,6 @@ class Board:
     # TODO: outros metodos da classe
 
 
-
-class Takuzu(Problem):
-    def __init__(self, board: Board):
-        """O construtor especifica o estado inicial."""
-        # TODO
-        pass
-
-    def actions(self, state: TakuzuState):
-        """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento."""
-        # TODO
-        pass
-
-    def result(self, state: TakuzuState, action):
-        """Retorna o estado resultante de executar a 'action' sobre
-        'state' passado como argumento. A ação a executar deve ser uma
-        das presentes na lista obtida pela execução de
-        self.actions(state)."""
-        # TODO
-        pass
-
-    def goal_test(self, state: TakuzuState):
-        """Retorna True se e só se o estado passado como argumento é
-        um estado objetivo. Deve verificar se todas as posições do tabuleiro
-        estão preenchidas com uma sequência de números adjacentes."""
-        # TODO
-        pass
-
-    def h(self, node: Node):
-        """Função heuristica utilizada para a procura A*."""
-        # TODO
-        pass
-
-    # TODO: outros metodos da classe
-
-
 # FIXME apagar que isto é só para testar coisas
 # Vou só "me inspirar" (a.k.a. copiar do search.py) no problema das NQueens e adaptar
 class TakuzuTemp(Problem):
@@ -260,19 +228,26 @@ class TakuzuTemp(Problem):
 
 
     def conflict(self, state: TakuzuState, val, row, col):
-        """Verifica se colocar um valor val numa
-        posicação (row, col) gera conflitos """
-        return (self.conflictInCol(state.board, val, row, col) or
-                self.conflictInRow(state.board, val, row, col) or
-                self.repeatedCol(state.board, val, row, col) or
-                self.repeatedRow(state.board, val, row, col)
-                )
-
-
-    def conflictInRow(self, board, val, row, col):
         """
-        Verifica se há um número igual de 1s e 0s em cada coluna e
-        se não há mais do que dois números iguais adjacentes
+        Verifica se colocar um valor val numa
+        posicação (row, col) gera conflitos.
+        """
+        return (self.numberAlreadyThere(state.board, row, col) or
+                self.conflictInCol(state.board, val, row, col) or
+                self.conflictInRow(state.board, val, row, col) #or
+                #self.repeatedCol(state.board, val, row, col) or
+                #self.repeatedRow(state.board, val, row, col)
+                ) # TODO implementar verificação de colunas e linhas repetidas
+
+
+    def numberAlreadyThere(self, board: Board, row: int, col: int):
+        return board.get_number(row, col) != 2
+
+
+    def conflictInRow(self, board: Board, val: int, row: int, col: int):
+        """
+        Verifica se não há mais do que dois números iguais adjacentes e se
+        a diferença entre 1s e 0s é maior que um numa dada linha.
         """
 
         # Vê se não há mais do que dois números iguais adjacentes
@@ -288,11 +263,11 @@ class TakuzuTemp(Problem):
 
 
         # Conta o número de 0s e 1s
-        # nr de vazios começa a 1 porque estamos a imaginar que colocamos o
+        # subtrai-se 1 ao nr de vazios porque estamos a imaginar que colocamos o
         # 'val' no lugar
         nr0s = 0
         nr1s = 0
-        nr_s = -1
+        nr_s = board.size - board.rowsQuantities[row] - 1
 
         if val == 1:
             nr1s += 1
@@ -305,9 +280,9 @@ class TakuzuTemp(Problem):
                 nr0s += 1
             elif nr == 1:
                 nr1s += 1
-            elif nr == 2:
-                nr_s += 1
 
+        # FIXME DEBUG apagar este print
+        print(nr0s, nr1s, nr_s)
 
         # Verifica primeiro se a linha ficaria toda preenchida
         #   A diferença entre o número de 0s e 1s tem que ser no máximo 1.
@@ -323,7 +298,57 @@ class TakuzuTemp(Problem):
                 return nr0s - (nr1s + nr_s) > 1
 
 
+    def conflictInCol(self, board: Board, val: int, row: int, col: int):
+        """
+        Verifica se não há mais do que dois números iguais adjacentes e se
+        a diferença entre 1s e 0s é maior que um numa dada coluna.
+        """
 
+        # Vê se não há mais do que dois números iguais adjacentes
+        topTop = board.get_number(row - 2, col)
+        top = board.get_number(row - 1, col)
+        botBot = board.get_number(row + 2, col)
+        bot = board.get_number(row + 1, col)
+        
+        if (topTop == top == val or
+                top == val == bot or
+                val == bot == botBot):
+            return True
+
+        # Conta o número de 0s e 1s
+        # subtrai-se 1 ao nr de vazios porque estamos a imaginar que colocamos o
+        # 'val' no lugar
+        nr0s = 0
+        nr1s = 0
+        nr_s = board.size - board.colQuantities[col] - 1
+
+        if val == 1:
+            nr1s += 1
+        elif val == 0:
+            nr0s += 1
+
+        for i in range(board.size):
+            nr = board.get_number(i, col)
+            if nr == 0:
+                nr0s += 1
+            elif nr == 1:
+                nr1s += 1
+
+        # FIXME DEBUG apagar este print
+        print(nr0s, nr1s, nr_s)
+
+        # Verifica primeiro se a linha ficaria toda preenchida
+        #   A diferença entre o número de 0s e 1s tem que ser no máximo 1.
+        #   Se for maior que 1 então há confitos.
+        # Se a linha não estiver preenchida, vê se o número de espaços vazios
+        # chega para a diferença entre o número de 0s e 1s ser no máximo 1.
+        if nr0s + nr1s == board.size:
+            return abs(nr1s - nr0s) > 1
+        else:
+            if val == 1:
+                return nr1s - (nr0s + nr_s) > 1
+            elif val == 0:
+                return nr0s - (nr1s + nr_s) > 1
 
 
     def h(self, node: Node):
@@ -333,7 +358,39 @@ class TakuzuTemp(Problem):
 
     # TODO: outros metodos da classe
 
+class Takuzu(Problem):
+    def __init__(self, board: Board):
+        """O construtor especifica o estado inicial."""
+        # TODO
+        pass
 
+    def actions(self, state: TakuzuState):
+        """Retorna uma lista de ações que podem ser executadas a
+        partir do estado passado como argumento."""
+        # TODO
+        pass
+
+    def result(self, state: TakuzuState, action):
+        """Retorna o estado resultante de executar a 'action' sobre
+        'state' passado como argumento. A ação a executar deve ser uma
+        das presentes na lista obtida pela execução de
+        self.actions(state)."""
+        # TODO
+        pass
+
+    def goal_test(self, state: TakuzuState):
+        """Retorna True se e só se o estado passado como argumento é
+        um estado objetivo. Deve verificar se todas as posições do tabuleiro
+        estão preenchidas com uma sequência de números adjacentes."""
+        # TODO
+        pass
+
+    def h(self, node: Node):
+        """Função heuristica utilizada para a procura A*."""
+        # TODO
+        pass
+
+    # TODO: outros metodos da classe
 
 # FIXME só para testar se os exemplos mostrados estão a funcionar bem
 def tempExemplo1():
@@ -355,11 +412,12 @@ def tempTeste1():
 
     print(initial_state.board.get_number(2, 2))
 
-    print(problem.conflictInRow(board, 1, 0, 3))  # True
-    print(problem.conflictInRow(board, 0, 0, 3))  # False
-    print(problem.conflictInRow(board, 1, 3, 2))  # True
-
-
+    print(problem.conflictInCol(board, 1, 0, 3))  # True
+    print(problem.conflictInCol(board, 0, 0, 3))  # False
+    print(problem.conflictInCol(board, 1, 3, 2))  # True
+    print(problem.conflictInCol(board, 1, 1, 1))  # True
+    print(problem.conflictInCol(board, 0, 1, 1))  # True
+    print(problem.conflictInCol(board, 0, 2, 0))  # True
 
 
 if __name__ == "__main__":
