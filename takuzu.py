@@ -18,9 +18,6 @@ from search import (
 )
 
 
-# TODO No enunciado diz "Podem ser feitas alterações a esta classe,
-#  estas devem ser devidamente justificadas". Devemos ter que justificar no relatório .-.
-#  Acho que basta dizer que foi por questões de eficiência a verificar o goal e a repetição de colunas
 class TakuzuState:
     state_id = 0
 
@@ -32,19 +29,18 @@ class TakuzuState:
     def __lt__(self, other):
         return self.id < other.id
 
-    # TODO: outros metodos da classe
-
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
     # Método para criar uma instância de tabuleiro
-    def __init__(self, size, board, nrFreeSlots=None, rowsQuantities=None, colQuantities=None):
+    def __init__(self, size, board, nrFreeSlots=None, rowsQuantities=None,
+                 colQuantities=None):
         self.board = board
         self.size = size
 
         # Variáveis iniciais
-        if nrFreeSlots == None or rowsQuantities == None or colQuantities == None:
+        if nrFreeSlots is None or rowsQuantities is None or colQuantities is None:
             nrFreeSlots = self.size ** 2
             rowsQuantities = [0 for _ in range(self.size)]
             colQuantities = [0 for _ in range(self.size)]
@@ -59,13 +55,9 @@ class Board:
                         rowsQuantities[i] += 1
                         colQuantities[j] += 1
 
-            # FIXME DEBUG apagar este print
-            # print(nrFreeSlots, rowsQuantities, colQuantities)
-
         self.nrFreeSlots = nrFreeSlots
         self.rowsQuantities = rowsQuantities
         self.colQuantities = colQuantities
-
 
     # Método para mostrar a representação externa do tabuleiro
     def __str__2(self):
@@ -80,6 +72,7 @@ class Board:
             i += 1
         return out
 
+
     # FIXME remover depois, print diferente (que não é aceite no mooshak), em
     # que mostra os indices do tabuleiro
     def __str__(self):
@@ -88,7 +81,7 @@ class Board:
         for i in range(self.size):
             out += f"{i}    "
         out += "\n"
-        for _ in range(self.size*5):
+        for _ in range(self.size * 5):
             out += "-"
         out += "\n"
 
@@ -113,7 +106,7 @@ class Board:
         return out
 
 
-    def get_number(self, row: int, col: int) -> int:
+    def get_number(self, row: int, col: int):
         """Devolve o valor na respetiva posição do tabuleiro."""
 
         # Verifica se a linha ou coluna está fora do limite
@@ -121,21 +114,21 @@ class Board:
             return None
 
         # Fancy math
-        return self.board[self.size*row + col]
+        return self.board[self.size * row + col]
 
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
 
-        return self.get_number(row+1, col), self.get_number(row-1, col)
+        return self.get_number(row + 1, col), self.get_number(row - 1, col)
 
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
 
-        return self.get_number(row, col-1), self.get_number(row, col+1)
+        return self.get_number(row, col - 1), self.get_number(row, col + 1)
 
 
     @staticmethod
@@ -163,17 +156,95 @@ class Board:
                 board.append(int(nr))
 
         return Board(size, board)
-    
-    def insert(self,row: int, col: int,number:int):
-        if row >= self.size or col >= self.size or number not in (0,1):
+
+
+    # Verifica se uma dada coluna está toda preenchida
+    def colIsFull(self, col: int):
+        return self.colQuantities[col] == self.size
+
+
+    # Verifica se uma dada linha está toda preenchida
+    def rowIsFull(self, row: int):
+        return self.rowsQuantities[row] == self.size
+
+
+    # Devolve uma lista com todas as colunas preenchidas
+    def getFullCols(self, colToExclude: int):
+        cols = []
+        for i in range(self.size):
+            if self.colQuantities[i] == self.size and i != colToExclude:
+                cols.append(i)
+        return cols
+
+
+    # Devolve uma lista com todas as linhas preenchidas
+    def getFullRows(self, rowToExclude: int):
+        rows = []
+        for i in range(self.size):
+            if self.rowsQuantities[i] == self.size and i != rowToExclude:
+                rows.append(i)
+        return rows
+
+
+    # Verifica se duas colunas são iguais
+    # Percorre ambas as colunas em paralelo e para de procurar assim que
+    # encontra um número diferente nas duas
+    def isSameCol(self, c1: int, c2: int):
+        for i in range(self.size):
+            if self.get_number(i, c1) != self.get_number(i, c2):
+                return False
+        return True
+
+
+    # Verifica se duas linhas são iguais
+    # Percorre ambas as linhas em paralelo e para de procurar assim que
+    # encontra um número diferente nas duas
+    def isSameRow(self, r1: int, r2: int):
+        for i in range(self.size):
+            if self.get_number(r1, i) != self.get_number(r2, i):
+                return False
+        return True
+
+
+    # Insere um número numa dada posição
+    def insert(self, row: int, col: int, number: int):
+        if row >= self.size or col >= self.size or number not in (0, 1):
             return None
-        self.board[self.size*row + col] = number
-    # TODO: outros metodos da classe
+        self.board[self.size * row + col] = number
 
 
-# FIXME apagar que isto é só para testar coisas
-# Vou só "me inspirar" (a.k.a. copiar do search.py) no problema das NQueens e adaptar
-class TakuzuTemp(Problem):
+    # Faz uma jogada no tabuleiro, inserindo um número numa dada posição e
+    # criando um novo tabuleiro (criam-se tabuleiros diferentes para cada um
+    # poder ficar guardado num TakuzuState).
+    def makePlay(self, row: int, col: int, number: int):
+
+        # Calcula o novo número de slots livres, bem como as novas quantidades
+        # de números na linha e coluna jogadas
+        new_nrFreeSlots = self.nrFreeSlots - 1
+
+        new_rowsQuantites = self.rowsQuantities.copy()
+        new_rowsQuantites[row] += 1
+
+        new_colQuantites = self.colQuantities.copy()
+        new_colQuantites[col] += 1
+
+        # Cria um novo tabuleiro (necessário ser um novo e não atualizar pois
+        # queremos manter os vários tabuleiros distribuidos por todos os
+        # estados)
+        newBoard = Board(self.size,
+                         self.board.copy(),
+                         new_nrFreeSlots,
+                         new_rowsQuantites,
+                         new_colQuantites)
+
+        # Insere o numero na posição certa do novo tabuleiro e devolve-o
+        newBoard.insert(row, col, number)
+
+        return newBoard
+
+
+
+class Takuzu(Problem):
 
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
@@ -182,12 +253,12 @@ class TakuzuTemp(Problem):
         self.size = board.size
 
 
-
     def actions(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
-        # TODO
+        # TODO implementar
+
         # TODO diz no enunciado que "Cada ação é representada sob a forma de
         #  um tuplo com 3 inteiros (indíce da linha, indíce da coluna, número
         #  a preencher na dada posição), por exemplo, (2, 1, 1) representa a
@@ -195,34 +266,22 @@ class TakuzuTemp(Problem):
 
         pass
 
+    def value(self, state: TakuzuState):
+        return 1
 
     def result(self, state: TakuzuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        
-        row, col, val= action
 
-        #Copy internal representation of Board Element and updtade all necessary values
-        # Tenho que copiar todas as listas,e atualizar os valores
+        # Extrai a informação da ação
+        row, col, val = action
 
-        state_board = state.board
-        
-        rowsQuantities = state_board.rowsQuantities.copy()
-        colQuantities = state_board.colQuantities.copy()
-        nrFreeSlots = state.board.nrFreeSlots-1
-        rowsQuantities[row]+=1
-        colQuantities[col]+=1
-        
-        #Create Board instance, and  result of action
-        board = Board(4,state_board.board.copy(), nrFreeSlots,rowsQuantities,colQuantities)
-        board.insert(row,col,val)
-
-        # Create TakuzuState with result board
-        return TakuzuState(board)
-
-
+        # Cria um novo tabuleiro, fazendo uma jogada com a respetiva linha,
+        # coluna e valor
+        newBoard = state.board.makePlay(row, col, val)
+        return TakuzuState(newBoard)
 
 
     def goal_test(self, state: TakuzuState):
@@ -234,7 +293,7 @@ class TakuzuTemp(Problem):
         # tem-se a certeza que todas as peças colocadas num tabuleiro
         # são válidas. Então, apenas se verifica se existe alguma
         # peça livre no tabuleiro.
-        return state.nrFreeSlots == 0
+        return state.board.nrFreeSlots == 0
         pass
 
 
@@ -245,33 +304,33 @@ class TakuzuTemp(Problem):
         """
         return (self.numberAlreadyThere(state.board, row, col) or
                 self.conflictInCol(state.board, val, row, col) or
-                self.conflictInRow(state.board, val, row, col) #or
-                #self.repeatedCol(state.board, val, row, col) or
-                #self.repeatedRow(state.board, val, row, col)
-                ) # TODO implementar verificação de colunas e linhas repetidas
+                self.conflictInRow(state.board, val, row, col) or
+                self.repeatedCol(state.board, col) or
+                self.repeatedRow(state.board, row)
+                )
 
-
-    def numberAlreadyThere(self, board: Board, row: int, col: int):
+    @staticmethod
+    def numberAlreadyThere(board: Board, row: int, col: int):
         return board.get_number(row, col) != 2
 
 
-    def conflictInRow(self, board: Board, val: int, row: int, col: int):
+    @staticmethod
+    def conflictInRow(board: Board, val: int, row: int, col: int):
         """
         Verifica se não há mais do que dois números iguais adjacentes e se
         a diferença entre 1s e 0s é maior que um numa dada linha.
         """
 
         # Vê se não há mais do que dois números iguais adjacentes
-        leftLeft = board.get_number(row, col-2)
-        left = board.get_number(row, col-1)
-        rightRight = board.get_number(row, col+2)
-        right = board.get_number(row, col+1)
+        leftLeft = board.get_number(row, col - 2)
+        left = board.get_number(row, col - 1)
+        rightRight = board.get_number(row, col + 2)
+        right = board.get_number(row, col + 1)
 
-        if (leftLeft == left == val or         # -> [1, 1, _]
-                left == val == right or        # -> [1, _, 1]
-                val == right == rightRight):   # -> [_, 1, 1]
+        if (leftLeft == left == val or  # -> [1, 1, _]
+                left == val == right or  # -> [1, _, 1]
+                val == right == rightRight):  # -> [_, 1, 1]
             return True
-
 
         # Conta o número de 0s e 1s
         # subtrai-se 1 ao nr de vazios porque estamos a imaginar que colocamos o
@@ -309,7 +368,8 @@ class TakuzuTemp(Problem):
                 return nr0s - (nr1s + nr_s) > 1
 
 
-    def conflictInCol(self, board: Board, val: int, row: int, col: int):
+    @staticmethod
+    def conflictInCol(board: Board, val: int, row: int, col: int):
         """
         Verifica se não há mais do que dois números iguais adjacentes e se
         a diferença entre 1s e 0s é maior que um numa dada coluna.
@@ -320,7 +380,7 @@ class TakuzuTemp(Problem):
         top = board.get_number(row - 1, col)
         botBot = board.get_number(row + 2, col)
         bot = board.get_number(row + 1, col)
-        
+
         if (topTop == top == val or
                 top == val == bot or
                 val == bot == botBot):
@@ -362,48 +422,61 @@ class TakuzuTemp(Problem):
                 return nr0s - (nr1s + nr_s) > 1
 
 
+    @staticmethod
+    # Verifica se a coluna col está repetida no tabuleiro board
+    def repeatedCol(board: Board, col: int):
+
+        # Se a coluna não estiver toda preenchida, não faz sentido verificar
+        # se está repetida
+        if not board.colIsFull(col):
+            return False
+
+        # Busca o conjunto de colunas já preenchidas, excluido a atual
+        fullCols = board.getFullCols(col)
+
+        # Compara todas as colunas preenchidas com a atual
+        for c in fullCols:
+            # Se forem iguais, então existe conflito
+            if board.isSameCol(col, c):
+                return True
+
+        return False
+
+
+    @staticmethod
+    # Verifica se a linha row está repetida no tabuleiro board
+    def repeatedRow(board: Board, row: int):
+
+        # Se a linha não estiver toda preenchida, não faz sentido verificar
+        # se está repetida
+        if not board.rowIsFull(row):
+            return False
+
+        # Busca o conjunto de linhas já preenchidas, excluido a atual
+        fullRows = board.getFullRows(row)
+
+        # Compara todas as linhas preenchidas com a atual
+        for r in fullRows:
+            # Se forem iguais, então existe conflito
+            if board.isSameRow(row, r):
+                return True
+
+        return False
+
+
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
         # TODO
         pass
 
-    # TODO: outros metodos da classe
 
-class Takuzu(Problem):
-    def __init__(self, board: Board):
-        """O construtor especifica o estado inicial."""
-        # TODO
-        pass
 
-    def actions(self, state: TakuzuState):
-        """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento."""
-        # TODO
-        pass
 
-    def result(self, state: TakuzuState, action):
-        """Retorna o estado resultante de executar a 'action' sobre
-        'state' passado como argumento. A ação a executar deve ser uma
-        das presentes na lista obtida pela execução de
-        self.actions(state)."""
-        # TODO
-        pass
+# FIXME Funções de testes, apagar depois da entrega
+# \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
-    def goal_test(self, state: TakuzuState):
-        """Retorna True se e só se o estado passado como argumento é
-        um estado objetivo. Deve verificar se todas as posições do tabuleiro
-        estão preenchidas com uma sequência de números adjacentes."""
-        # TODO
-        pass
 
-    def h(self, node: Node):
-        """Função heuristica utilizada para a procura A*."""
-        # TODO
-        pass
-
-    # TODO: outros metodos da classe
-
-# FIXME só para testar se os exemplos mostrados estão a funcionar bem
 def tempExemplo1():
     board = Board.parse_instance_from_stdin()
     print("Initial:\n", board, sep="")
@@ -414,11 +487,12 @@ def tempExemplo1():
     print(board.adjacent_vertical_numbers(1, 1))
     print(board.adjacent_horizontal_numbers(1, 1))
 
+
 def tempTeste1():
     board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 1, 2, 1, 1, 2, 0])
     print("Initial:\n", board, sep="")
 
-    problem = TakuzuTemp(board)
+    problem = Takuzu(board)
     initial_state = TakuzuState(board)
 
     print(initial_state.board.get_number(2, 2))
@@ -430,35 +504,69 @@ def tempTeste1():
     print(problem.conflictInCol(board, 0, 1, 1))  # True
     print(problem.conflictInCol(board, 0, 2, 0))  # True
 
-   # FIXME Apagar esta funcao
 def testingResult():
     board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 1, 2, 1, 1, 2, 0])
 
     print("Initial:\n", board, sep="")
-    print("row:",board.rowsQuantities," col:",board.colQuantities," free:",board.nrFreeSlots)
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
 
-    problem = TakuzuTemp(board)
+    problem = Takuzu(board)
     initial_state = TakuzuState(board)
 
-    final_state = problem.result(initial_state,(0,2,1))
+    final_state = problem.result(initial_state, (0, 2, 1))
     board2 = final_state.board
-    print("Final:\n", board2,sep="")
-    print("row:",board2.rowsQuantities," col:",board2.colQuantities," free:",board2.nrFreeSlots)
+    print("Final:\n", board2, sep="")
+    print("row:", board2.rowsQuantities, " col:", board2.colQuantities,
+          " free:", board2.nrFreeSlots)
+
+
+def testingRepeatedCol():
+    board = Board(4, [1, 1, 1, 2,
+                      0, 1, 0, 2,
+                      1, 0, 1, 2,
+                      1, 1, 1, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
+
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
+
+    print(problem.repeatedCol(board, 0))
+
+
+def testingRepeatedRow():
+    board = Board(4, [1, 1, 1, 1,
+                      0, 1, 0, 1,
+                      0, 1, 0, 1,
+                      1, 1, 1, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
+
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
+
+    print(problem.repeatedRow(board, 0))
+
+# \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
 
 if __name__ == "__main__":
-    # TODO: Ler o ficheiro de input de sys.argv[1],
 
-    #tempExemplo1()
-    #tempTeste1()
-    testingResult()
-
-
+    # tempExemplo1()
+    # tempTeste1()
+    # testingResult()
+    # testingRepeatedCol()
+    testingRepeatedRow()
 
     # TODO: Usar uma técnica de procura para resolver a instância,
     # TODO: Retirar a solução a partir do nó resultante,
     # TODO: Imprimir para o standard output no formato indicado.
-
 
     pass
