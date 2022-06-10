@@ -62,14 +62,9 @@ class Board:
             # FIXME DEBUG apagar este print
             # print(nrFreeSlots, rowsQuantities, colQuantities)
 
-            self.nrFreeSlots = nrFreeSlots
-            self.rowsQuantities = rowsQuantities
-            self.colQuantities = colQuantities
-
-        else:
-            self.nrFreeSlots = nrFreeSlots
-            self.rowsQuantities = rowsQuantities
-            self.colQuantities = colQuantities
+        self.nrFreeSlots = nrFreeSlots
+        self.rowsQuantities = rowsQuantities
+        self.colQuantities = colQuantities
 
 
     # Método para mostrar a representação externa do tabuleiro
@@ -168,7 +163,11 @@ class Board:
                 board.append(int(nr))
 
         return Board(size, board)
-
+    
+    def insert(self,row: int, col: int,number:int):
+        if row >= self.size or col >= self.size or number not in (0,1):
+            return None
+        self.board[self.size*row + col] = number
     # TODO: outros metodos da classe
 
 
@@ -202,16 +201,28 @@ class TakuzuTemp(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
+        
+        row, col, val= action
 
-        # TODO
-        # TODO quando se cria o estado que se vai jogar, não esquecer de:
-        #  - preencher o número de "slots" livres no tabuleiro do estado novo
-        #    (há de ser o nr do estado antigo - 1);
-        #  - preencher o número de peças na linha e coluna daquele
-        #    vetor (também há de ser igual ao do estado antigo mas
-        #    incrementa-se o número da linha e coluna correspondentes à jogada)
+        #Copy internal representation of Board Element and updtade all necessary values
+        # Tenho que copiar todas as listas,e atualizar os valores
 
-        pass
+        state_board = state.board
+        
+        rowsQuantities = state_board.rowsQuantities.copy()
+        colQuantities = state_board.colQuantities.copy()
+        nrFreeSlots = state.board.nrFreeSlots-1
+        rowsQuantities[row]+=1
+        colQuantities[col]+=1
+        
+        #Create Board instance, and  result of action
+        board = Board(4,state_board.board.copy(), nrFreeSlots,rowsQuantities,colQuantities)
+        board.insert(row,col,val)
+
+        # Create TakuzuState with result board
+        return TakuzuState(board)
+
+
 
 
     def goal_test(self, state: TakuzuState):
@@ -419,13 +430,29 @@ def tempTeste1():
     print(problem.conflictInCol(board, 0, 1, 1))  # True
     print(problem.conflictInCol(board, 0, 2, 0))  # True
 
+   # FIXME Apagar esta funcao
+def testingResult():
+    board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 1, 2, 1, 1, 2, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:",board.rowsQuantities," col:",board.colQuantities," free:",board.nrFreeSlots)
+
+    problem = TakuzuTemp(board)
+    initial_state = TakuzuState(board)
+
+    final_state = problem.result(initial_state,(0,2,1))
+    board2 = final_state.board
+    print("Final:\n", board2,sep="")
+    print("row:",board2.rowsQuantities," col:",board2.colQuantities," free:",board2.nrFreeSlots)
+
+
 
 if __name__ == "__main__":
     # TODO: Ler o ficheiro de input de sys.argv[1],
 
     #tempExemplo1()
-    tempTeste1()
-
+    #tempTeste1()
+    testingResult()
 
 
 
