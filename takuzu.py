@@ -160,14 +160,14 @@ class Board:
         return Board(size, board)
 
 
-    # Verifica se uma dada coluna está toda preenchida
-    def colIsFull(self, col: int):
-        return self.colQuantities[col] == self.size
+    # Verifica se uma dada coluna fica toda preenchida com uma jogada
+    def colBecomesFull(self, col: int):
+        return self.colQuantities[col] == self.size - 1
 
 
-    # Verifica se uma dada linha está toda preenchida
-    def rowIsFull(self, row: int):
-        return self.rowsQuantities[row] == self.size
+    # Verifica se uma dada linha fica toda preenchida com uma jogada
+    def rowBecomesFull(self, row: int):
+        return self.rowsQuantities[row] == self.size - 1
 
 
     # Devolve uma lista com todas as colunas preenchidas
@@ -188,12 +188,25 @@ class Board:
         return rows
 
 
+    def getCol(self, col: int):
+        colVec = []
+        for i in range(self.size):
+            colVec.append(self.get_number(i, col))
+        return colVec
+
+    def getRow(self, row: int):
+        rowVec = []
+        for i in range(self.size):
+            rowVec.append(self.get_number(row, i))
+        return rowVec
+
+
     # Verifica se duas colunas são iguais
     # Percorre ambas as colunas em paralelo e para de procurar assim que
     # encontra um número diferente nas duas
-    def isSameCol(self, c1: int, c2: int):
+    def isSameCol(self, colVec: list, c2: int):
         for i in range(self.size):
-            if self.get_number(i, c1) != self.get_number(i, c2):
+            if colVec[i] != self.get_number(i, c2):
                 return False
         return True
 
@@ -201,9 +214,9 @@ class Board:
     # Verifica se duas linhas são iguais
     # Percorre ambas as linhas em paralelo e para de procurar assim que
     # encontra um número diferente nas duas
-    def isSameRow(self, r1: int, r2: int):
+    def isSameRow(self, rowVec: list, r2: int):
         for i in range(self.size):
-            if self.get_number(r1, i) != self.get_number(r2, i):
+            if rowVec[i] != self.get_number(r2, i):
                 return False
         return True
 
@@ -329,8 +342,8 @@ class Takuzu(Problem):
         return (self.numberAlreadyThere(state.board, row, col) or
                 self.conflictInCol(state.board, val, row, col) or
                 self.conflictInRow(state.board, val, row, col) or
-                self.repeatedCol(state.board, col) or
-                self.repeatedRow(state.board, row)
+                self.repeatedCol(state.board, val, row, col) or
+                self.repeatedRow(state.board, val, row, col)
                 )
 
     @staticmethod
@@ -448,20 +461,24 @@ class Takuzu(Problem):
 
     @staticmethod
     # Verifica se a coluna col está repetida no tabuleiro board
-    def repeatedCol(board: Board, col: int):
+    def repeatedCol(board: Board, val: int, row: int, col: int):
 
-        # Se a coluna não estiver toda preenchida, não faz sentido verificar
+        # Se a coluna não ficar toda preenchida, não faz sentido verificar
         # se está repetida
-        if not board.colIsFull(col):
+        if not board.colBecomesFull(col):
             return False
 
         # Busca o conjunto de colunas já preenchidas, excluido a atual
         fullCols = board.getFullCols(col)
 
+        # Busca um vetor com a coluna atual e simula a jogada
+        colVec = board.getCol(col)
+        colVec[row] = val
+
         # Compara todas as colunas preenchidas com a atual
         for c in fullCols:
             # Se forem iguais, então existe conflito
-            if board.isSameCol(col, c):
+            if board.isSameCol(colVec, c):
                 return True
 
         return False
@@ -469,20 +486,24 @@ class Takuzu(Problem):
 
     @staticmethod
     # Verifica se a linha row está repetida no tabuleiro board
-    def repeatedRow(board: Board, row: int):
+    def repeatedRow(board: Board, val: int, row: int, col: int):
 
-        # Se a linha não estiver toda preenchida, não faz sentido verificar
+        # Se a linha não ficar toda preenchida, não faz sentido verificar
         # se está repetida
-        if not board.rowIsFull(row):
+        if not board.rowBecomesFull(row):
             return False
 
         # Busca o conjunto de linhas já preenchidas, excluido a atual
         fullRows = board.getFullRows(row)
 
+        # Busca um vetor com a linha atual e simula a jogada
+        rowVec = board.getRow(row)
+        rowVec[col] = val
+
         # Compara todas as linhas preenchidas com a atual
         for r in fullRows:
             # Se forem iguais, então existe conflito
-            if board.isSameRow(row, r):
+            if board.isSameRow(rowVec, r):
                 return True
 
         return False
@@ -632,9 +653,9 @@ if __name__ == "__main__":
     #testingRepeatedCol()
     #testingRepeatedRow()
     
-    #testingAction1()
-    #testingAction2()
-    #testingAction3()
+    testingAction1()
+    testingAction2()
+    testingAction3()
 
 
     # TODO: Usar uma técnica de procura para resolver a instância,
