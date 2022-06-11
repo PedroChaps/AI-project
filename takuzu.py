@@ -116,6 +116,8 @@ class Board:
         # Fancy math
         return self.board[self.size * row + col]
 
+    def free_position(self, row: int, col: int):
+        return self.get_number(row,col)==2
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
@@ -257,17 +259,39 @@ class Takuzu(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
-        # TODO implementar
 
+
+
+        ##### ISTO É A PARTE DEPOIS DAS JOGADAS OBRIGATORIAS
+        board = state.board
+        size = board.size
+        rows = board.rowsQuantities
+        cols = board.colQuantities
+
+        #Encontrar primeira posicao livre- a que tem a coluna e linha nao totalmente preenchida
+        for x in range(size):
+            if rows[x] < size:
+                free_spot_row=x  
+                break
+        for x in range(size):
+            if board.free_position(free_spot_row,x):
+                free_spot_col = x
+                break
+
+        actions = []
+        #Ou jogo 0
+        if not self.conflict(state,0,free_spot_row,free_spot_col):
+            actions.extend([(free_spot_row,free_spot_col,0)])
+        #Ou jogo 1
+        if not self.conflict(state,1,free_spot_row,free_spot_col):
+            actions.extend([(free_spot_row,free_spot_col,1)])
+
+        return actions
         # TODO diz no enunciado que "Cada ação é representada sob a forma de
         #  um tuplo com 3 inteiros (indíce da linha, indíce da coluna, número
         #  a preencher na dada posição), por exemplo, (2, 1, 1) representa a
         #  ação “preencher o número 1 na posição linha 2 coluna 1”"
 
-        pass
-
-    def value(self, state: TakuzuState):
-        return 1
 
     def result(self, state: TakuzuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -293,8 +317,8 @@ class Takuzu(Problem):
         # tem-se a certeza que todas as peças colocadas num tabuleiro
         # são válidas. Então, apenas se verifica se existe alguma
         # peça livre no tabuleiro.
+    
         return state.board.nrFreeSlots == 0
-        pass
 
 
     def conflict(self, state: TakuzuState, val, row, col):
@@ -311,7 +335,7 @@ class Takuzu(Problem):
 
     @staticmethod
     def numberAlreadyThere(board: Board, row: int, col: int):
-        return board.get_number(row, col) != 2
+        return not board.free_position(row,col)
 
 
     @staticmethod
@@ -552,9 +576,52 @@ def testingRepeatedRow():
 
     print(problem.repeatedRow(board, 0))
 
+
+def testingAction1():
+    ## Nao ha jogada possivel,porque posicao(0,3) nao pode ser 0, nem 1
+
+    board = Board(4, [1, 1, 1, 2,
+                      0, 1, 0, 2,
+                      1, 0, 1, 2,
+                      1, 1, 1, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
+
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
+
+    print(problem.actions(initial_state))
+
+def testingAction2():
+    ## Jogada possivel e (0, 2, 0), porque se fosse 1 iria ter coluna repetida 
+    board = Board(4, [1, 1, 2, 2, 2, 2, 0, 2, 2, 0, 1, 2, 1, 1, 2, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
+
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
+
+    print(problem.actions(initial_state))
+
+def testingAction3():
+    ## Jogada possivel e (0, 2, 0), porque se fosse 1 iria ter coluna repetida 
+    board = Board(4, [1, 1, 0, 1, 2, 2, 0, 2, 0, 2, 1, 2, 1, 1, 2, 0])
+
+    print("Initial:\n", board, sep="")
+    print("row:", board.rowsQuantities, " col:", board.colQuantities, " free:",
+          board.nrFreeSlots)
+
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
+
+    print(problem.actions(initial_state))
+
 # \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 # /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-
 
 
 if __name__ == "__main__":
@@ -562,8 +629,13 @@ if __name__ == "__main__":
     # tempExemplo1()
     # tempTeste1()
     # testingResult()
-    # testingRepeatedCol()
-    testingRepeatedRow()
+    #testingRepeatedCol()
+    #testingRepeatedRow()
+    
+    #testingAction1()
+    #testingAction2()
+    #testingAction3()
+
 
     # TODO: Usar uma técnica de procura para resolver a instância,
     # TODO: Retirar a solução a partir do nó resultante,
