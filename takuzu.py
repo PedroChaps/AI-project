@@ -47,7 +47,7 @@ class Board:
         self.colQuantities = colQuantities
 
     # Método para mostrar a representação externa do tabuleiro
-    def __str__2(self):
+    def __str__(self):
         out = ""
         i = 1
         for nr in self.board:
@@ -57,12 +57,13 @@ class Board:
             else:
                 out += "\t"
             i += 1
-        return out
+        # print(repr(out))
+        return out[:-1] # Exclui um \n que está a mais no fim
 
 
     # FIXME remover depois, print diferente (que não é aceite no mooshak), em
     # que mostra os indices do tabuleiro
-    def __str__(self):
+    def __str__2(self):
 
         out = "   "
         for i in range(self.size):
@@ -97,7 +98,7 @@ class Board:
         """Devolve o valor na respetiva posição do tabuleiro."""
 
         # Verifica se a linha ou coluna está fora do limite
-        if row >= self.size or col >= self.size:
+        if row >= self.size or col >= self.size or row < 0 or col < 0:
             return None
 
         # Fancy math
@@ -268,7 +269,7 @@ class Takuzu(Problem):
         self.size = board.size
 
 
-    def actions(self, state: TakuzuState):
+    def actions2(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
@@ -300,7 +301,40 @@ class Takuzu(Problem):
             actions.extend([(free_spot_row,free_spot_col,1)])
 
         return actions
-       
+
+
+    def actions(self, state: TakuzuState):
+
+        firstPlay = None
+        actions = []
+
+        board = state.board
+        size = board.size
+        rows = board.rowsQuantities
+        cols = board.colQuantities
+
+        for i in range(size):
+            for j in range(size):
+                if board.free_position(i, j):
+                    for val in (0, 1):
+                        if not self.conflict(state, val, i, j):
+                            actions.extend([(i, j, val)])
+                    # Se existir apenas uma jogada possivel para a posição atual,
+                    # significa que é uma jogada obrigatória. Então, joga-a
+                    if len(actions) == 1:
+                        return actions
+                    # Se for a primeira jogada possivel, guardo-a para mais logo
+                    # a utilizar, caso não existam jogadas obrigatórias
+                    elif firstPlay is None:
+                        firstPlay = actions.copy()
+                    # Faço reset às ações possiveis
+                    actions = []
+
+        # Se não encontrei nenhuma jogada obrigatória, então retorno a primeira
+        # jogada possivel, por questões de eficiência
+
+        return firstPlay
+
 
 
     def result(self, state: TakuzuState, action):
@@ -386,7 +420,7 @@ class Takuzu(Problem):
                 nr1s += 1
 
         # FIXME DEBUG apagar este print
-        print(nr0s, nr1s, nr_s)
+        # print(nr0s, nr1s, nr_s)
 
         # Verifica primeiro se a linha ficaria toda preenchida
         #   A diferença entre o número de 0s e 1s tem que ser no máximo 1.
@@ -440,7 +474,7 @@ class Takuzu(Problem):
                 nr1s += 1
 
         # FIXME DEBUG apagar este print
-        print(nr0s, nr1s, nr_s)
+        #print(nr0s, nr1s, nr_s)
 
         # Verifica primeiro se a linha ficaria toda preenchida
         #   A diferença entre o número de 0s e 1s tem que ser no máximo 1.
@@ -654,6 +688,52 @@ def test_search():
     print("Is goal?", problem.goal_test(goal_node.state))
     print("Solution:\n", goal_node.state.board, sep="")
 
+# Igual ao test_search() mas a ler do input
+def exemplo4():
+    # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
+    # $ python3 takuzu < i1.txt
+    board = Board.parse_instance_from_stdin()
+    # Criar uma instância de Takuzu:
+    problem = Takuzu(board)
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board, sep="")
+
+
+# O Formato do mooshak é só mostrar o tabuleiro
+def solveWithMooshakFormat():
+    board = Board.parse_instance_from_stdin()
+    problem = Takuzu(board)
+    goal_node = depth_first_tree_search(problem)
+    print(goal_node.state.board, sep="")
+    return 0
+
+
+def debuggarInput03():
+    board = Board(8, [2, 2, 2, 0, 0, 2, 2, 0,
+                      1, 2, 2, 2, 2, 0, 2, 2,
+                      2, 0, 2, 0, 1, 2, 2, 1,
+                      2, 2, 2, 2, 2, 1, 2, 2,
+                      2, 2, 1, 2, 1, 2, 0, 0,
+                      0, 2, 2, 2, 2, 2, 0, 1,
+                      2, 0, 2, 2, 0, 2, 2, 2,
+                      2, 2, 2, 1, 1, 2, 0, 2])
+
+    # Criar uma instância de Takuzu:
+    problem = Takuzu(board)
+
+    print("Initial:\n", problem.initial.board, sep="")
+
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    if goal_node == None:
+        print("No solution found")
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board, sep="")
+
 # \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 # /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
@@ -670,10 +750,16 @@ if __name__ == "__main__":
     #testingAction2()
     #testingAction3()
     
-    test_search()
+    #test_search()
+
+    #exemplo4()
+
+    solveWithMooshakFormat()
+
+    #debuggarInput03()
 
     # TODO: Usar uma técnica de procura para resolver a instância,
     # TODO: Retirar a solução a partir do nó resultante,
     # TODO: Imprimir para o standard output no formato indicado.
 
-    pass
+
