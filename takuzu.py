@@ -17,19 +17,6 @@ from search import (
     recursive_best_first_search,
 )
 
-
-class TakuzuState:
-    state_id = 0
-
-    def __init__(self, board):
-        self.board = board
-        self.id = TakuzuState.state_id
-        TakuzuState.state_id += 1
-
-    def __lt__(self, other):
-        return self.id < other.id
-
-
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
@@ -259,12 +246,25 @@ class Board:
 
 
 
+class TakuzuState:
+    state_id = 0
+
+    def __init__(self,  board: Board):
+        self.board = board
+        self.id = TakuzuState.state_id
+        TakuzuState.state_id += 1
+
+    def __lt__(self, other):
+        return self.id < other.id
+
+
 class Takuzu(Problem):
 
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
 
-        super().__init__(board)
+        initial_state= TakuzuState(board)
+        super().__init__(initial_state)
         self.size = board.size
 
 
@@ -300,10 +300,7 @@ class Takuzu(Problem):
             actions.extend([(free_spot_row,free_spot_col,1)])
 
         return actions
-        # TODO diz no enunciado que "Cada ação é representada sob a forma de
-        #  um tuplo com 3 inteiros (indíce da linha, indíce da coluna, número
-        #  a preencher na dada posição), por exemplo, (2, 1, 1) representa a
-        #  ação “preencher o número 1 na posição linha 2 coluna 1”"
+       
 
 
     def result(self, state: TakuzuState, action):
@@ -629,7 +626,7 @@ def testingAction2():
     print(problem.actions(initial_state))
 
 def testingAction3():
-    ## Jogada possivel e (0, 2, 0), porque se fosse 1 iria ter coluna repetida 
+    ## Jogada possivel e (1,0,0), ter tres 1s e apenas um 0
     board = Board(4, [1, 1, 0, 1, 2, 2, 0, 2, 0, 2, 1, 2, 1, 1, 2, 0])
 
     print("Initial:\n", board, sep="")
@@ -640,6 +637,22 @@ def testingAction3():
     initial_state = TakuzuState(board)
 
     print(problem.actions(initial_state))
+
+
+def test_search():
+    board = Board(4, [2,1,2,0,2,2,0,2,2,0,2,2,1,1,2,0])
+    # Criar uma instância de Takuzu:
+    problem = Takuzu(board)
+
+    print("Initial:\n", problem.initial.board, sep="")
+
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    if goal_node == None:
+        print("No solution found")
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board, sep="")
 
 # \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 # /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -653,10 +666,11 @@ if __name__ == "__main__":
     #testingRepeatedCol()
     #testingRepeatedRow()
     
-    testingAction1()
-    testingAction2()
-    testingAction3()
-
+    #testingAction1()
+    #testingAction2()
+    #testingAction3()
+    
+    test_search()
 
     # TODO: Usar uma técnica de procura para resolver a instância,
     # TODO: Retirar a solução a partir do nó resultante,
