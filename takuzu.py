@@ -12,9 +12,12 @@ from search import (
     Node,
     astar_search,
     breadth_first_tree_search,
+    compare_searchers,
     depth_first_tree_search,
     greedy_search,
     recursive_best_first_search,
+    breadth_first_graph_search,
+    depth_first_graph_search
 )
 
 
@@ -278,7 +281,6 @@ class Takuzu(Problem):
 
         # Se não encontrei nenhuma jogada obrigatória, então retorno a primeira
         # jogada possivel, por questões de eficiência
-
         return firstPlay
 
 
@@ -486,12 +488,47 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
         # TODO
-        pass
+        actions = self.actions(node.state)
+        if (actions==None or len(actions)==0):
+            return node.state.board.nrFreeSlots * 2 
+        return node.state.board.nrFreeSlots + len(actions) - 1 
+        #minimo passos possiveis é preenhcer todas as slots vazias sempre com len(actions)==1, e os dois valores para a atual
+        # UPDATE 20:00 -its not ;( but we still got the implementation xD
 
+
+
+def compare_graph_searchers():
+    """Prints a table of search results."""
+    board = Board(8, [2, 2, 2, 0, 0, 2, 2, 0,
+                      1, 2, 2, 2, 2, 0, 2, 2,
+                      2, 0, 2, 0, 1, 2, 2, 1,
+                      2, 2, 2, 2, 2, 1, 2, 2,
+                      2, 2, 1, 2, 1, 2, 0, 0,
+                      0, 2, 2, 2, 2, 2, 0, 1,
+                      2, 0, 2, 2, 0, 2, 2, 2,
+                      2, 2, 2, 1, 1, 2, 0, 2])
+    # Criar uma instância de Takuzu:
+    problem = Takuzu(board)
+    compare_searchers(problems=[problem],header=['Searcher','Takuzu'],
+                        searchers=[breadth_first_tree_search,
+                                 breadth_first_graph_search,
+                                 depth_first_graph_search,astar_search
+                                ])
 
 if __name__ == "__main__":
-
-    read_board = Board.parse_instance_from_stdin()
-    problem = Takuzu(read_board)
-    goal_node = depth_first_tree_search(problem)
-    print(goal_node.state.board, sep="")
+    #board = Board(4, [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0])
+    #problem = Takuzu(board)
+    board = Board(8, [2, 2, 2, 0, 0, 2, 2, 0,
+                      1, 2, 2, 2, 2, 0, 2, 2,
+                      2, 0, 2, 0, 1, 2, 2, 1,
+                      2, 2, 2, 2, 2, 1, 2, 2,
+                      2, 2, 1, 2, 1, 2, 0, 0,
+                      0, 2, 2, 2, 2, 2, 0, 1,
+                      2, 0, 2, 2, 0, 2, 2, 2,
+                      2, 2, 2, 1, 1, 2, 0, 2])
+    # Criar uma instância de Takuzu:
+    problem = Takuzu(board)
+    #solution = depth_first_graph_search(problem)
+    solution = astar_search(problem, lambda node: problem.h(node))
+    print(solution.state.board)
+    #compare_graph_searchers()
